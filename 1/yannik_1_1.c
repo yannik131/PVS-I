@@ -201,7 +201,7 @@ SimulationState read_simulation_state() {
     }
 
     printf("Now, type in the number of compartments.\n");
-    printf("This should be lower or equal the number of columns of your terminal to display the histogram correctly.\n");
+    printf("This should be lower or equal to the number of columns of your terminal to display the histogram correctly.\n");
     while(state.number_of_compartments <= 1) {
         printf("The number of compartments has to be greater than 1.\n");
         state.number_of_compartments = safely_read_integer();
