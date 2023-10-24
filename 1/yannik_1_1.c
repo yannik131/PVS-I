@@ -9,7 +9,6 @@ const int EMPTY = -1;
 typedef struct SimulationState {
     int number_of_balls;
     int number_of_compartments;
-    bool print_board;
 } SimulationState;
 
 bool ball_goes_right() {
@@ -24,11 +23,11 @@ int safely_read_integer() {
     int integer;
     char* input = NULL;
     size_t input_length = 0;
-    ssize_t getline_return = -1;
+    ssize_t getline_return = EOF;
     ssize_t sscanf_return;
     char character_after_number;
 
-    while(getline_return == -1 || sscanf_return != 2 || character_after_number != '\n') {
+    while(getline_return == EOF || sscanf_return != 2 || character_after_number != '\n') {
         if(input != NULL) {
             free(input);
             input = NULL;
@@ -48,18 +47,6 @@ void init_array_with(int* array, size_t size, int value) {
         array[i] = value;
     }
 }
-
-void print_game_field(int** array, int size) {
-    for(int i = 0; i < size; ++i) {
-        int* arr = array[i];
-        for(int j = 0; j < i + 2; ++j) {
-            printf("%d ", arr[j]);
-        }
-        printf("\n");
-    }
-    printf("\n");
-}
-
 
 void count_and_clear_last_row(int** game_field, int* histogram, int number_of_compartments) {
     int* last_row = game_field[number_of_compartments - 1];
@@ -111,7 +98,7 @@ void let_balls_fall_1_row(int** game_field, int number_of_compartments) {
 
 
 void insert_ball_at_top(int** game_field, int number_of_balls) {
-    if(number_of_balls <= 0) {
+    if(number_of_balls < 0) {
         return;
     }
     int index = ball_goes_right()? 1 : 0;
@@ -131,7 +118,7 @@ void display_histogram(int* histogram, SimulationState state) {
     }
     for(int i = state.number_of_compartments; i > -1; --i) {
         for(int j = 0; j < state.number_of_compartments; ++j) {
-            if(histogram[j] > i * max / state.number_of_compartments) {
+            if(histogram[j] > (i + 1) * max / state.number_of_compartments) {
                 printf("X ");
             }
             else {
@@ -146,11 +133,10 @@ void display_histogram(int* histogram, SimulationState state) {
         printf("\n");
     }
 
-    printf("\nUnderlying histogram:\n");
+    printf("\nX = %d balls. Underlying histogram:\n", (int)round(max / state.number_of_compartments));
     for(int i = 0; i < state.number_of_compartments; ++i) {
         printf("%d ", histogram[i]);
     }
-    printf("\n");
 }
 
 int** create_board(SimulationState state) {
@@ -187,9 +173,6 @@ int* run_simulation(SimulationState state) {
     for(int i = 0; i < number_of_iterations; ++i) {
         insert_ball_at_top(game_field, state.number_of_balls);
         let_balls_fall_1_row(game_field, state.number_of_compartments);
-        if(state.print_board) {
-            print_game_field(game_field, state.number_of_compartments);
-        }
         count_and_clear_last_row(game_field, histogram, state.number_of_compartments);
         --state.number_of_balls;
     }
@@ -219,12 +202,6 @@ SimulationState read_simulation_state() {
            "Number of balls: %d\n"
            "Number of compartments: %d\n\n", 
            state.number_of_balls, state.number_of_compartments);
-
-    printf("Print board once after insertion of the top ball and one iteration?\n1: yes, other: no\n");
-    state.print_board = safely_read_integer() == 1;
-    if(state.print_board) {
-        printf("Printing the board. -1 denotes an empty field. Other numbers represent the balls.\n\n");
-    }
 
     return state;
 }
