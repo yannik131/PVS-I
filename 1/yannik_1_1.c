@@ -117,7 +117,7 @@ void insert_ball_at_top(int** game_field, int number_of_balls) {
 }
 
 /*
-The histogram well be displayed in a quadratic grid.
+The histogram will be displayed in a quadratic grid.
 So it needs to be normalized to the number of compartments.
 */
 void display_histogram(int* histogram, SimulationState state) {
@@ -174,13 +174,14 @@ int** create_board(SimulationState state) {
     -1 2
     -1 -1 1
 */
-int* run_simulation(int** game_field, SimulationState state) {
+int* run_simulation(SimulationState state) {
     set_random_seed();
+    int** game_field = create_board(state);
 
     int* histogram = (int*)malloc(state.number_of_compartments * sizeof(int));
     init_array_with(histogram, state.number_of_compartments, 0);
 
-    int number_of_iterations = state.number_of_balls + state.number_of_compartments;
+    int number_of_iterations = state.number_of_balls + state.number_of_compartments + 1;
     for(int i = 0; i < number_of_iterations; ++i) {
         insert_ball_at_top(game_field, state.number_of_balls);
         let_balls_fall_1_row(game_field, state.number_of_compartments);
@@ -195,7 +196,7 @@ int* run_simulation(int** game_field, SimulationState state) {
 }
 
 SimulationState read_simulation_state() {
-    SimulationState state;
+    SimulationState state = {.number_of_balls = -1, .number_of_compartments = -1};
 
     printf("A Galton Board simulation.\n"
            "First, type in the number of balls.\n");
@@ -229,8 +230,7 @@ SimulationState read_simulation_state() {
 int main() {
     SimulationState state = read_simulation_state();
 
-    int** game_field = create_board(state);
-    int* histogram = run_simulation(game_field, state);
+    int* histogram = run_simulation(state);
     display_histogram(histogram, state);
 
     return 0;
