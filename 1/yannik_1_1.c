@@ -4,7 +4,7 @@
 #include <math.h>
 #include <time.h>
 
-const EMPTY = -1;
+const int EMPTY = -1;
 
 typedef struct SimulationState {
     int number_of_balls;
