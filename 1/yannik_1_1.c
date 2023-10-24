@@ -2,9 +2,20 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <math.h>
+#include <time.h>
+
+typedef struct SimulationState {
+    int number_of_balls;
+    int number_of_compartments;
+    bool print_board;
+} SimulationState;
 
 bool ball_goes_right() {
     return rand() % 2 == 0;
+}
+
+void set_random_seed() {
+    srand(time(0));
 }
 
 int safely_read_integer() {
@@ -36,7 +47,7 @@ void init_array_with(int* array, size_t size, int value) {
     }
 }
 
-void print_2d_array(int** array, int size) {
+void print_game_field(int** array, int size) {
     for(int i = 0; i < size; ++i) {
         int* arr = array[i];
         for(int j = 0; j < i + 2; ++j) {
@@ -109,16 +120,16 @@ void insert_ball_at_top(int** game_field, int number_of_balls) {
 The histogram well be displayed in a quadratic grid.
 So it needs to be normalized to the number of compartments.
 */
-void display_histogram(int* histogram, int number_of_compartments) {
+void display_histogram(int* histogram, SimulationState state) {
     int max = -1;
-    for(int i = 0; i < number_of_compartments; ++i) {
+    for(int i = 0; i < state.number_of_compartments; ++i) {
         if(histogram[i] > max) {
             max = histogram[i];
         }
     }
-    for(int i = number_of_compartments; i > -1; --i) {
-        for(int j = 0; j < number_of_compartments; ++j) {
-            if(histogram[j] > i * max / number_of_compartments) {
+    for(int i = state.number_of_compartments; i > -1; --i) {
+        for(int j = 0; j < state.number_of_compartments; ++j) {
+            if(histogram[j] > i * max / state.number_of_compartments) {
                 printf("X ");
             }
             else {
@@ -132,40 +143,26 @@ void display_histogram(int* histogram, int number_of_compartments) {
         }
         printf("\n");
     }
+
+    printf("\nUnderlying histogram:\n");
+    for(int i = 0; i < state.number_of_compartments; ++i) {
+        printf("%d ", histogram[i]);
+    }
+    printf("\n");
 }
 
-int main() {
-    int number_of_balls = 0;
-    int number_of_compartments = 0;
-
-    printf("A Galton Board simulation.\n"
-           "First, type in the number of balls.\n");
-
-    while(number_of_balls <= 0) {
-        printf("The number of balls needs to be positive.\n");
-        number_of_balls = safely_read_integer();
+int** create_board(SimulationState state) {
+    int** game_field = (int**)malloc(state.number_of_compartments * sizeof(int*));
+    for(size_t i = 0; i < state.number_of_compartments; ++i) {
+        size_t size = i + 2;
+        game_field[i] = (int*)malloc(size * sizeof(int));
+        init_array_with(game_field[i], size, -1);
     }
 
-    printf("Now, type in the number of compartments.\n");
-    printf("This should be lower or equal the number of columns of your terminal to display the histogram correctly.\n");
-    while(number_of_compartments <= 1) {
-        printf("The number of compartments has to be greater than 1.\n");
-        number_of_compartments = safely_read_integer();
-    }
+    return game_field;
+}
 
-    printf("\nRunning simulation with: \n"
-           "Number of balls: %d\n"
-           "Number of compartments: %d\n\n", 
-           number_of_balls, number_of_compartments);
-
-    printf("Print board once after insertion of the top ball and one iteration?\n1: yes, other: no\n");
-    bool print_board = safely_read_integer() == 1;
-    if(print_board) {
-        printf("Printing the board. -1 denotes an empty field. Other numbers represent the balls.\n\n");
-    }
-
-    /*Simulation concept:
-
+/*Simulation concept:
     Let's say there are 2 balls and 3 compartments. 
     Every ball will have a unique number starting with 0.
     Every row of the board corresponds to an n+2 array, where n
@@ -174,39 +171,67 @@ int main() {
     Every iteration, a ball is put in the first row, if any are left.
     Every following ball will go down 1 row.
     After two iterations, the arrays may look like this:
-    0 2
-    0 0 1
+    -1 2
+    -1 -1 1
+*/
+int* run_simulation(int** game_field, SimulationState state) {
+    set_random_seed();
 
-    */
+    int* histogram = (int*)malloc(state.number_of_compartments * sizeof(int));
+    init_array_with(histogram, state.number_of_compartments, 0);
 
-    int** game_field = (int**)malloc(number_of_compartments * sizeof(int*));
-    for(size_t i = 0; i < number_of_compartments; ++i) {
-        size_t size = i + 2;
-        game_field[i] = (int*)malloc(size * sizeof(int));
-        init_array_with(game_field[i], size, -1);
-    }
-
-    int* histogram = (int*)malloc(number_of_compartments * sizeof(int));
-    init_array_with(histogram, number_of_compartments, 0);
-
-    int number_of_iterations = number_of_balls + number_of_compartments;
+    int number_of_iterations = state.number_of_balls + state.number_of_compartments;
     for(int i = 0; i < number_of_iterations; ++i) {
-        insert_ball_at_top(game_field, number_of_balls);
-        let_balls_fall_1_row(game_field, number_of_compartments);
-        if(print_board) {
-            print_2d_array(game_field, number_of_compartments);
+        insert_ball_at_top(game_field, state.number_of_balls);
+        let_balls_fall_1_row(game_field, state.number_of_compartments);
+        if(state.print_board) {
+            print_game_field(game_field, state.number_of_compartments);
         }
-        count_and_clear_last_row(game_field, histogram, number_of_compartments);
-        --number_of_balls;
+        count_and_clear_last_row(game_field, histogram, state.number_of_compartments);
+        --state.number_of_balls;
     }
 
-    display_histogram(histogram, number_of_compartments);
+    return histogram;
+}
 
-    printf("\nUnderlying histogram:\n");
-    for(int i = 0; i < number_of_compartments; ++i) {
-        printf("%d ", histogram[i]);
+SimulationState read_simulation_state() {
+    SimulationState state;
+
+    printf("A Galton Board simulation.\n"
+           "First, type in the number of balls.\n");
+
+    while(state.number_of_balls <= 0) {
+        printf("The number of balls needs to be positive.\n");
+        state.number_of_balls = safely_read_integer();
     }
-    printf("\n");
+
+    printf("Now, type in the number of compartments.\n");
+    printf("This should be lower or equal the number of columns of your terminal to display the histogram correctly.\n");
+    while(state.number_of_compartments <= 1) {
+        printf("The number of compartments has to be greater than 1.\n");
+        state.number_of_compartments = safely_read_integer();
+    }
+
+    printf("\nRunning simulation with: \n"
+           "Number of balls: %d\n"
+           "Number of compartments: %d\n\n", 
+           state.number_of_balls, state.number_of_compartments);
+
+    printf("Print board once after insertion of the top ball and one iteration?\n1: yes, other: no\n");
+    state.print_board = safely_read_integer() == 1;
+    if(state.print_board) {
+        printf("Printing the board. -1 denotes an empty field. Other numbers represent the balls.\n\n");
+    }
+
+    return state;
+}
+
+int main() {
+    SimulationState state = read_simulation_state();
+
+    int** game_field = create_board(state);
+    int* histogram = run_simulation(game_field, state);
+    display_histogram(histogram, state);
 
     return 0;
 }
