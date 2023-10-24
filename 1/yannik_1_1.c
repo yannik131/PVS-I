@@ -4,6 +4,8 @@
 #include <math.h>
 #include <time.h>
 
+const EMPTY = -1;
+
 typedef struct SimulationState {
     int number_of_balls;
     int number_of_compartments;
@@ -62,9 +64,9 @@ void print_game_field(int** array, int size) {
 void count_and_clear_last_row(int** game_field, int* histogram, int number_of_compartments) {
     int* last_row = game_field[number_of_compartments - 1];
     for(int i = 0; i < number_of_compartments; ++i) {
-        if(last_row[i] != -1) {
+        if(last_row[i] != EMPTY) {
             ++histogram[i];
-            last_row[i] = -1;
+            last_row[i] = EMPTY;
             return;
         }
     }
@@ -83,7 +85,7 @@ void let_balls_fall_1_row(int** game_field, int number_of_compartments) {
         int ball_number;
         int index_of_ball_above = -1;
         for(int j = 0; j < size_of_row_above; ++j) {
-            if(row_above[j] != -1) {
+            if(row_above[j] != EMPTY) {
                 ball_number = row_above[j];
                 index_of_ball_above = j;
                 break;
@@ -103,7 +105,7 @@ void let_balls_fall_1_row(int** game_field, int number_of_compartments) {
         //Assign the ball to the new index and remove it from the old
         int* current_row = game_field[i];
         current_row[new_index] = ball_number;
-        row_above[index_of_ball_above] = -1;
+        row_above[index_of_ball_above] = EMPTY;
     }
 }
 
@@ -121,7 +123,7 @@ The histogram will be displayed in a quadratic grid.
 So it needs to be normalized to the number of compartments.
 */
 void display_histogram(int* histogram, SimulationState state) {
-    int max = -1;
+    int max = EMPTY;
     for(int i = 0; i < state.number_of_compartments; ++i) {
         if(histogram[i] > max) {
             max = histogram[i];
@@ -156,7 +158,7 @@ int** create_board(SimulationState state) {
     for(size_t i = 0; i < state.number_of_compartments; ++i) {
         size_t size = i + 2;
         game_field[i] = (int*)malloc(size * sizeof(int));
-        init_array_with(game_field[i], size, -1);
+        init_array_with(game_field[i], size, EMPTY);
     }
 
     return game_field;
