@@ -214,6 +214,11 @@ void _get_min_max(Node* node, int* min, int* max) {
     } 
 }
 
+/*Checks if a subtree of a node is valid. Mechanism:
+1. Get the maximum key of the subtree to the left.
+2. If the maximum is greater or equal to the node's value, the tree is invalid.
+Same for right subtree, but reversed.
+*/
 bool _is_valid(Node node) {
     if(!node.smaller_keys && !node.larger_keys) {
         return true;
@@ -272,6 +277,15 @@ void tree_delete(Tree* tree) {
     tree->root = NULL;
 }
 
+Tree create_invalid_tree() {
+    Tree tree = tree_create();
+    tree.root = node_create(0);
+    tree.root->larger_keys = node_create(-1);
+    tree.root->smaller_keys = node_create(15);
+
+    return tree;
+}
+
 int main() {
     Tree tree = tree_create();
     assert(tree_is_valid(tree));
@@ -287,7 +301,10 @@ int main() {
         }
         nodes[i] = tree_insert_key(&tree, value);
     }
-    tree_is_valid(tree);
+    assert(tree_is_valid(tree));
+    
+    Tree invalid_tree = create_invalid_tree();
+    assert(!tree_is_valid(invalid_tree));
 
     Tree copy = tree_deep_copy(tree);
     for(int i = 0; i < SIZE; ++i) {
