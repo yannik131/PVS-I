@@ -123,6 +123,8 @@ Node* tree_insert_key(Tree* tree, int key) {
         return tree->root;
     }
     Node* insertion_point = tree_get_candidate_node(tree->root, key);
+    
+    //Duplicate entries are ignored.
     if(insertion_point->key == key) {
         return NULL;
     }
@@ -169,6 +171,7 @@ void move_to_next_level(TreeTraverser* t) {
     if(t->current->larger_keys) {
         stack_push(&t->right_turns, t->current->larger_keys);
     }
+
     if(!stack_empty(t->left_turns)) {
         t->current = stack_pop(&t->left_turns);
     }
@@ -255,6 +258,10 @@ bool tree_is_valid(Tree tree) {
     return true;
 }
 
+//The iterative traversal yields uses stacks to remember which nodes to visit.
+//Also, the algorithm always goes left first.
+//This causes the keys to automatically be in the right order for deep copying
+//the tree structure.
 Tree tree_deep_copy(Tree tree) {
     Tree copy = tree_create();
     
@@ -277,35 +284,57 @@ void tree_delete(Tree* tree) {
     tree->root = NULL;
 }
 
-Tree create_invalid_tree() {
+//=============================================================================
+//Testing
+//=============================================================================
+
+void test_tree_is_valid() {
     Tree tree = tree_create();
     tree.root = node_create(0);
     tree.root->larger_keys = node_create(-1);
     tree.root->smaller_keys = node_create(15);
 
-    return tree;
+    assert(!tree_is_valid(tree));
 }
 
-int main() {
+void test_deep_copy() {
+    Tree tree = tree_create();
+    tree.root = node_create(7);
+    tree.root->larger_keys = node_create(10);
+    tree.root->smaller_keys = node_create(2);
+    tree.root->smaller_keys->larger_keys = node_create(5);
+    tree.root->smaller_keys->larger_keys->smaller_keys = node_create(3);
+    tree.root->larger_keys->larger_keys = node_create(15);
+
+    Tree copy = tree_deep_copy(tree);
+
+    assert(tree.root->key == 7);
+    assert(tree.root->larger_keys->key == 10);
+    assert(tree.root->smaller_keys->key == 2);
+    assert(tree.root->smaller_keys->larger_keys->key == 5);
+    assert(tree.root->smaller_keys->larger_keys->smaller_keys->key == 3);
+    assert(tree.root->larger_keys->larger_keys->key == 15);
+
+    tree_delete(&copy);
+}
+
+void test_insertion_and_deletion() {
     Tree tree = tree_create();
     assert(tree_is_valid(tree));
 
-    const int SIZE = 50;
+    const int SIZE = 100;
 
     Node* nodes[SIZE];
     for(int i = 0; i < SIZE; ++i) {
-        int value = rand() % SIZE*10;
-        if(tree_find_key_iterative(tree, value)) {
-            --i;
-            continue;
-        }
+        int value = rand() % (SIZE*100);
         nodes[i] = tree_insert_key(&tree, value);
+        if(nodes[i] == NULL) { //Duplicate entry
+            --i; //Try again
+        }
     }
     assert(tree_is_valid(tree));
-    
-    Tree invalid_tree = create_invalid_tree();
-    assert(!tree_is_valid(invalid_tree));
 
+    //Test finding keys iteratively and recursively
     Tree copy = tree_deep_copy(tree);
     for(int i = 0; i < SIZE; ++i) {
         assert(tree_find_key_iterative(tree, nodes[i]->key));
@@ -318,7 +347,12 @@ int main() {
         assert(tree_find_key_iterative(tree, nodes[i]->key));
         assert(!tree_find_key_iterative(copy, nodes[i]->key));
     }
-    assert(tree_is_valid(tree));
+}
+
+int main() {
+    test_tree_is_valid();
+    test_deep_copy();
+    test_insertion_and_deletion();
 
     printf("All tests passed!\n");
 
