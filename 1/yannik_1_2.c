@@ -99,6 +99,8 @@ Node* node_create(int key) {
 }
 
 //Helper function to find a suitable node to attach a new node with a given key to
+//Mechanism: Look at the current node. If the key is smaller than the node's
+//key, go left if possible or return the node. Do the same for bigger and going right.
 Node* tree_get_candidate_node(Node *node, int key) {
     if(node->smaller_keys && key < node->key) {
         return tree_get_candidate_node(node->smaller_keys, key);
@@ -156,6 +158,10 @@ void tree_traverser_delete(TreeTraverser* tree_traverser) {
     stack_delete(&tree_traverser->right_turns);
 }
 
+//Traversing a tree iteratively: If the current node has left or right children,
+//add them to the stacks of nodes to be visited. If the stacks contain nodes, take
+//one from the top. Otherwise, set the current node to NULL, indicating that
+//traversal is over.
 void move_to_next_level(TreeTraverser* t) {
     if(t->current->smaller_keys) {
         stack_push(&t->left_turns, t->current->smaller_keys);
@@ -178,6 +184,7 @@ bool tree_traverser_end_reached(TreeTraverser t) {
     return t.current == NULL;
 }
 
+//Most of the functions use iterative traversion because it's more efficient
 Node* tree_find_key_iterative(Tree tree, int key) {
     TreeTraverser t = tree_traverser_create(tree.root);
     while(!tree_traverser_end_reached(t)) {
