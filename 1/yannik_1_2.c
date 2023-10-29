@@ -316,6 +316,7 @@ void test_deep_copy() {
     assert(tree.root->larger_keys->larger_keys->key == 15);
 
     tree_delete(&copy);
+    tree_delete(&tree);
 }
 
 void test_insertion_and_deletion() {
@@ -347,6 +348,7 @@ void test_insertion_and_deletion() {
         assert(tree_find_key_iterative(tree, nodes[i]->key));
         assert(!tree_find_key_iterative(copy, nodes[i]->key));
     }
+    tree_delete(&tree);
 }
 
 int main() {
