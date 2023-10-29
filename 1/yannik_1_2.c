@@ -187,16 +187,20 @@ bool tree_traverser_end_reached(TreeTraverser t) {
     return t.current == NULL;
 }
 
-//Most of the functions use iterative traversion because it's more efficient
 Node* tree_find_key_iterative(Tree tree, int key) {
-    TreeTraverser t = tree_traverser_create(tree.root);
-    while(!tree_traverser_end_reached(t)) {
-        if(t.current->key == key) {
-            tree_traverser_delete(&t);
-            return t.current;
+    Node* current = tree.root;
+
+    while(current) {
+        if(current->key == key) {
+            return current;
         }
-        move_to_next_level(&t);
-    };
+        if(key > current->key) {
+            current = current->larger_keys;
+        }
+        else {
+            current = current->smaller_keys;
+        }
+    }
     
     return NULL;
 }
