@@ -98,7 +98,7 @@ Node* node_create(int key) {
     return node;
 }
 
-//Helper function to find a suitable node to attach a new node with a given key to
+//Traversing the tree recursively to find a suitable node to attach a new node with a given key to
 //Mechanism: Look at the current node. If the key is smaller than the node's
 //key, go left if possible or return the node. Do the same for bigger and going right.
 Node* tree_get_candidate_node(Node *node, int key) {
@@ -258,7 +258,7 @@ bool tree_is_valid(Tree tree) {
     return true;
 }
 
-//The iterative traversal yields uses stacks to remember which nodes to visit.
+//The iterative traversal uses stacks to remember which nodes to visit.
 //Also, the algorithm always goes left first.
 //This causes the keys to automatically be in the right order for deep copying
 //the tree structure.
