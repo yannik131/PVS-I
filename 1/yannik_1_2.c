@@ -205,22 +205,6 @@ Node* tree_find_key_iterative(Tree tree, int key) {
     return NULL;
 }
 
-void _get_min_max(Node* node, int* min, int* max) {
-    *min = INT_MAX;
-    *max = INT_MIN;
-    
-    TreeTraverser t = tree_traverser_create(node);
-    while(!tree_traverser_end_reached(t)) {
-        if(t.current->key < *min) {
-            *min = t.current->key;
-        }
-        if(t.current->key > *max) {
-            *max = t.current->key;
-        }
-        move_to_next_level(&t);
-    } 
-}
-
 /*Checks if a subtree of a node is valid. Mechanism:
 1. Get the maximum key of the subtree to the left.
 2. If the maximum is greater or equal to the node's value, the tree is invalid.
@@ -232,16 +216,28 @@ bool _is_valid(Node node) {
     }
 
     if(node.smaller_keys) {
-        int left_min, left_max;
-        _get_min_max(node.smaller_keys, &left_min, &left_max);
-        if(left_max >= node.key) {
+        int left_min = INT_MAX;
+        Node* current = node.smaller_keys;
+        while(current) {
+            if(current->key < left_min) {
+                left_min = current->key;
+            }
+            current = current->smaller_keys;
+        }
+        if(left_min >= node.key) {
             return false;
         }
     }
     if(node.larger_keys) {
-        int right_min, right_max;
-        _get_min_max(node.larger_keys, &right_min, &right_max);
-        if(right_min <= node.key) {
+        int right_max = INT_MIN;
+        Node* current = node.larger_keys;
+        while(current) {
+            if(current->key > right_max) {
+                right_max = current->key;
+            }
+            current = current->larger_keys;
+        }
+        if(right_max <= node.key) {
             return false;
         }
     }
