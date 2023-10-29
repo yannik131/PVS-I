@@ -98,7 +98,7 @@ Node* node_create(int key) {
     return node;
 }
 
-//Traversing the tree recursively to find a suitable node to attach a new node with a given key to
+//Finds a node with a given key recursively
 //Mechanism: Look at the current node. If the key is smaller than the node's
 //key, go left if possible or return the node. Do the same for bigger and going right.
 Node* tree_get_candidate_node(Node *node, int key) {
@@ -118,25 +118,35 @@ bool tree_find_key_recursive(Tree tree, int key) {
 }
 
 Node* tree_insert_key(Tree* tree, int key) {
-    if(!tree->root) {
-        tree->root = node_create(key);
-        return tree->root;
-    }
-    Node* insertion_point = tree_get_candidate_node(tree->root, key);
-    
-    //Duplicate entries are ignored.
-    if(insertion_point->key == key) {
-        return NULL;
-    }
     Node* new_node = node_create(key);
-    if(key < insertion_point->key) {
-        insertion_point->smaller_keys = new_node;
-    }
-    else {
-        insertion_point->larger_keys = new_node;
+    if(!tree->root) {
+        tree->root = new_node;
+        return new_node;
     }
 
-    return new_node;
+    Node* current = tree->root;
+    while(current) {
+        if(key < current->key) {
+            if(!current->smaller_keys) {
+                current->smaller_keys = new_node;
+                return new_node;
+            }
+            current = current->smaller_keys;
+        }
+        else if(key > current->key) {
+            if(!current->larger_keys) {
+                current->larger_keys = new_node;
+                return new_node;
+            }
+            current = current->larger_keys;
+        }
+        else {
+            free(new_node);
+            return NULL; //Ignore duplicates
+        }
+    }
+
+    return NULL;
 }
 
 typedef struct {
