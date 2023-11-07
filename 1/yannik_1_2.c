@@ -149,6 +149,9 @@ Node* tree_insert_key(Tree* tree, int key) {
     return NULL;
 }
 
+//tree_deep_copy, tree_delete and tree_is_valid use iterative traversion of the tree.
+//To avoid code duplication, the traversal part is taken care of by the
+//TreeTraverser struct
 typedef struct {
     Node* current;
     Stack left_turns;
@@ -269,7 +272,6 @@ bool tree_is_valid(Tree tree) {
 }
 
 //The iterative traversal uses stacks to remember which nodes to visit.
-//Also, the algorithm always goes left first.
 //This causes the keys to automatically be in the right order for deep copying
 //the tree structure.
 Tree tree_deep_copy(Tree tree) {
@@ -359,6 +361,7 @@ void test_insertion_and_deletion() {
         assert(!tree_find_key_iterative(copy, nodes[i]->key));
     }
     tree_delete(&tree);
+    assert(tree.root == NULL);
 }
 
 int main() {

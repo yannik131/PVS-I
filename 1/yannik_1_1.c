@@ -139,12 +139,9 @@ void display_histogram(int* histogram, SimulationState state) {
     }
 
     printf("\nX = %d balls. Underlying histogram:\n", number_of_balls_per_X);
-    int sum = 0;
     for(int i = 0; i < state.number_of_compartments; ++i) {
         printf("%d ", histogram[i]);
-        sum += histogram[i];
     }
-    printf("\nSum: %d\n", sum);
 }
 
 int** create_board(SimulationState state) {
