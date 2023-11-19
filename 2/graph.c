@@ -373,28 +373,6 @@ Graph* graph_create_3d_torus(int height, int width, int depth) {
 		}
 	}
 	
-	/*for(int i = 0; i < height; i+=2) {
-		for(int j = 0; j < width; j+=2) {
-			for(int k = 0; k < depth; k+=2) {
-				Node* neighbors[6] = {
-					i < height-1? grid_3d[i+1][j][k] : grid_3d[0][j][k], 	//unten
-					i > 0? grid_3d[i-1][j][k] : NULL, 						//oben
-					j < width-1? grid_3d[i][j+1][k] : grid_3d[i][0][k], 	//links
-					j > 0? grid_3d[i][j-1][k] : NULL, 						//rechts
-					k < depth-1? grid_3d[i][j][k+1] : grid_3d[i][j][0], 	//vorne
-					k > 0? grid_3d[i][j][k-1] : NULL 						//hinten
-				};
-				Node* current = grid_3d[i][j][k];
-				for(int l = 0; l < 6; ++l) {
-					if(neighbors[l] != NULL) {
-						printf("(%s)->(%s)\n", current->label, neighbors[l]->label);
-						graph_insert_edge(current, neighbors[l]);
-					}
-				}
-			}
-		}
-	}*/
-	
 	//Testing the graph
 	Path* p;
 	Node* A = grid_3d[0][0][0];
