@@ -451,6 +451,14 @@ int graph_calculate_diameter(Graph* graph) {
 	return diameter;
 }
 
+int graph_calculate_edge_count(Graph* graph) {
+	int count = 0;
+	for(int i = 0; i < graph->node_count; ++i) {
+		count += graph->nodes[i]->adjacent_nodes_count;	
+	}
+	
+	return count / 2;
+}
 
 /////////////////////////////////////////////////////////////////////////////////
 // main function demonstrating the use of the graph functions
@@ -458,54 +466,38 @@ int graph_calculate_diameter(Graph* graph) {
 
 int main(int argc, char** args)
 {
-	Graph* g_1;
-	graph_create(&g_1);
-	Node* A = graph_insert_node(g_1, (char*)"A");
-	Node* B = graph_insert_node(g_1, (char*)"B");
-	Node* C = graph_insert_node(g_1, (char*)"C");
-	Node* D = graph_insert_node(g_1, (char*)"D");
-	Node* E = graph_insert_node(g_1, (char*)"E");
-	Node* F = graph_insert_node(g_1, (char*)"F");
-	Node* G = graph_insert_node(g_1, (char*)"G");
-	graph_insert_edge(A, B);
-	graph_insert_edge(A, C);
-	graph_insert_edge(C, F);
-	graph_insert_edge(C, E);
-	graph_insert_edge(B, D);
-	graph_insert_edge(E, G);
-	graph_insert_edge(B, F);
-	
-	Path* p;
-	graph_find_shortest_path(A, G, &p);
-	path_print(p);
-	path_delete(p);
-	graph_delete(g_1);
-
 	int n = 10, d;
 	Graph* g_ring = graph_create_ring(n);
 	
 	assert(graph_calculate_degree(g_ring) == 2);
 	assert(graph_calculate_diameter(g_ring) == (int)(n / 2));
+	assert(g_ring->node_count == n);
+	assert(graph_calculate_edge_count(g_ring) == n);
 	
 	//Fail für 2, 4, 2. Algorithmus gibt 4. n = 16, 16^(1/3)/2 * d = 3.8. 
 	//Formel falsch? Runden statt abrunden?
-	Graph* torus_3d = graph_create_3d_torus(3, 3, 3);
+	int height = 3, width = 3, depth = 3;
+	Graph* torus_3d = graph_create_3d_torus(height, width, depth);
 	n = torus_3d->node_count;
 	d = 3;
 	double temp = pow(n, 1./d)/2.;
-	int expected_diameter = d * (int)(temp);
+	int expected_diameter = d * (int)(temp); 
 	
 	assert(graph_calculate_degree(torus_3d) == 2*d);
 	assert(graph_calculate_diameter(torus_3d) == expected_diameter);
+	assert(torus_3d->node_count == height*width*depth);
+	//TODO:
+	//assert(graph_calculate_edge_count(torus_3d) == )  //Anzahl Kanten im d-dimensionalen Torus?
 	
 	n = 10;
 	Graph* complete_graph = graph_create_complete_graph(n);
 
 	assert(graph_calculate_degree(complete_graph) == n-1);
 	assert(graph_calculate_diameter(complete_graph) == 1);
+	assert(complete_graph->node_count == n);
+	assert(graph_calculate_edge_count(complete_graph) == n*(n-1)/2);
 	
-	printf("Done!\n");
-	
+	printf("All tests passed!\n");
 	return 0;
 }
 
