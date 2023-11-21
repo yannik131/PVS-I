@@ -291,7 +291,7 @@ void graph_find_shortest_path(Node* from, Node* to, Path** p)
 }
 
 //Erzeugt einen Ring mit gegebener Knotenzahl.
-//Bei nur einem Knoten erhaelt dieser Knoten eine Kante mit sich selbst.
+//Bei nur einem Knoten erhält dieser Knoten eine Kante mit sich selbst.
 Graph* graph_create_ring(int n) {
 	assert(n > 0);
 	Graph* graph;
@@ -317,8 +317,8 @@ Graph* graph_create_ring(int n) {
 //Erzeugt einen 3D-Torus mit gegebener Höhe, Breite und Tiefe.
 //Vorgehen: Erstelle alle Knoten in einem 3d-Array.
 //Iteriere anschließend das Array, um die Kanten zu setzen.
-//Notiz: Das geht auch mit einem 1-D Array (graph->nodes), aber dann muesste man
-//sich ueberlegen, wie man da die Kanten setzen muss.
+//Notiz: Das geht auch mit einem 1-D Array (graph->nodes), aber dann müsste man
+//sich überlegen, wie man da die Kanten setzen muss.
 Graph* graph_create_3d_torus(int height, int width, int depth) {
 	assert(height > 0 && width > 0 && depth > 0);
 	Graph* graph;
@@ -357,7 +357,7 @@ Graph* graph_create_3d_torus(int height, int width, int depth) {
 		}
 	}
 	
-	//Entlang der Hoehe
+	//Entlang der Höhe
 	for(int i = 0; i < width; ++i) {
 		for(int j = 0; j < depth; ++j) {
 			for(int k = 0; k < height; ++k) {
@@ -392,7 +392,7 @@ Graph* graph_create_complete_graph(int n) {
 	}
 	
 	//Mit 2 verschachtelten Schleifen lassen sich alle 2er-Kombinationen aus n Elementen ermitteln
-	//(Es gibt n ueber k Auswahlen von je k Elementen aus einer Menge von n Elementen)
+	//(Es gibt n über k Auswahlen von je k Elementen aus einer Menge von n Elementen)
 	for(int i = 0; i < n - 1; ++i) {
 		for(int j = i + 1; j < n; ++j) {
 			graph_insert_edge(graph->nodes[i], graph->nodes[j]);
@@ -402,7 +402,7 @@ Graph* graph_create_complete_graph(int n) {
 	return graph;
 }
 
-//Bestimmt den Grad des Graphen indem der hoechste Grad eines Knoten gesucht wird
+//Bestimmt den Grad des Graphen indem der höchste Grad eines Knoten gesucht wird
 int graph_calculate_degree(Graph* graph) {
 	int degree = 0;
 	for(int i = 0; i < graph->node_count; ++i) {
@@ -418,7 +418,7 @@ int graph_calculate_diameter(Graph* graph) {
 	int diameter = 0;
 	
 	//Auch hier werden alle 2er-Kombinationen wie bei graph_create_complete_graph betrachtet
-	//Es werden also alle Pfade bestimmt und davon der laengste genommen (ineffizient)
+	//Es werden also alle Pfade bestimmt und davon der längste genommen (ineffizient)
 	for(int i = 0; i < graph->node_count - 1; ++i) {
 		for(int j = i; j < graph->node_count; ++j) {
 			Path* p;
@@ -438,7 +438,7 @@ int graph_calculate_edge_count(Graph* graph) {
 		count += graph->nodes[i]->adjacent_nodes_count;	
 	}
 	
-	return count / 2; //Jede Kante wird doppelt gezaehlt, also durch 2 teilen
+	return count / 2; //Jede Kante wird doppelt gezählt, also durch 2 teilen
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -457,7 +457,7 @@ int main(int argc, char** args)
 	assert(graph_calculate_edge_count(g_ring) == n);
 	
 	//3d-Torus
-	//Fail fuer 2, 4, 2. Algorithmus gibt 4. n = 16, floor(16^(1/3)/2) * d = 3
+	//Fail für 2, 4, 2. Algorithmus gibt 4. n = 16, floor(16^(1/3)/2) * d = 3
 	//Formel falsch? Runden statt abrunden?
 	int height = 3, width = 3, depth = 3;
 	Graph* torus_3d = graph_create_3d_torus(height, width, depth);
@@ -471,7 +471,7 @@ int main(int argc, char** args)
 	assert(torus_3d->node_count == number_of_nodes);
 	assert(graph_calculate_edge_count(torus_3d) == d*number_of_nodes); 
 	
-	//Vollstaendiger Graph
+	//Vollständiger Graph
 	n = 10;
 	Graph* complete_graph = graph_create_complete_graph(n);
 
