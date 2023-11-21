@@ -310,13 +310,6 @@ Graph* graph_create_ring(int n) {
 	}
 
 	graph_insert_edge(previous, first);
-	printf("(%s,%s)", previous->label, first->label);
-	
-	//Testing
-	Path* p;
-	graph_find_shortest_path(first, previous, &p);
-	path_print(p);
-	path_delete(p);
 	
 	return graph;
 }
@@ -373,14 +366,6 @@ Graph* graph_create_3d_torus(int height, int width, int depth) {
 		}
 	}
 	
-	//Testing the graph
-	Path* p;
-	Node* A = grid_3d[0][0][0];
-	Node* B = grid_3d[height-1][width-1][depth-1];
-	graph_find_shortest_path(A, B, &p);
-	path_print(p);
-	path_delete(p);
-	
 	//Speicher freigeben
 	for(int i = 0; i < height; ++i) {
 		for(int j = 0; j < width; ++j) {
@@ -414,15 +399,10 @@ Graph* graph_create_complete_graph(int n) {
 		}
 	}
 	
-	//Testing
-	Path* p;
-	graph_find_shortest_path(graph->nodes[2], graph->nodes[7], &p);
-	path_print(p);
-	path_delete(p);
-	
 	return graph;
 }
 
+//Bestimmt den Grad des Graphen indem der höchste Grad eines Knoten gesucht wird
 int graph_calculate_degree(Graph* graph) {
 	int degree = 0;
 	for(int i = 0; i < graph->node_count; ++i) {
@@ -438,6 +418,7 @@ int graph_calculate_diameter(Graph* graph) {
 	int diameter = 0;
 	
 	//Auch hier werden alle 2er-Kombinationen wie bei graph_create_complete_graph betrachtet
+	//Es werden also alle Pfade bestimmt und davon der längste genommen (ineffizient)
 	for(int i = 0; i < graph->node_count - 1; ++i) {
 		for(int j = i; j < graph->node_count; ++j) {
 			Path* p;
@@ -457,7 +438,7 @@ int graph_calculate_edge_count(Graph* graph) {
 		count += graph->nodes[i]->adjacent_nodes_count;	
 	}
 	
-	return count / 2;
+	return count / 2; //Jede Kante wird doppelt gezählt, also durch 2 teilen
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -466,29 +447,31 @@ int graph_calculate_edge_count(Graph* graph) {
 
 int main(int argc, char** args)
 {
+	//Ring
 	int n = 10, d;
 	Graph* g_ring = graph_create_ring(n);
 	
 	assert(graph_calculate_degree(g_ring) == 2);
-	assert(graph_calculate_diameter(g_ring) == (int)(n / 2));
+	assert(graph_calculate_diameter(g_ring) == (int)(n / 2.));
 	assert(g_ring->node_count == n);
 	assert(graph_calculate_edge_count(g_ring) == n);
 	
-	//Fail für 2, 4, 2. Algorithmus gibt 4. n = 16, 16^(1/3)/2 * d = 3.8. 
+	//3d-Torus
+	//Fail für 2, 4, 2. Algorithmus gibt 4. n = 16, floor(16^(1/3)/2) * d = 3
 	//Formel falsch? Runden statt abrunden?
 	int height = 3, width = 3, depth = 3;
 	Graph* torus_3d = graph_create_3d_torus(height, width, depth);
 	n = torus_3d->node_count;
 	d = 3;
-	double temp = pow(n, 1./d)/2.;
-	int expected_diameter = d * (int)(temp); 
+	int expected_diameter = d * (int)(pow(n, 1./d)/2.); 
+	int number_of_nodes = height*width*depth;
 	
 	assert(graph_calculate_degree(torus_3d) == 2*d);
 	assert(graph_calculate_diameter(torus_3d) == expected_diameter);
-	assert(torus_3d->node_count == height*width*depth);
-	//TODO:
-	//assert(graph_calculate_edge_count(torus_3d) == )  //Anzahl Kanten im d-dimensionalen Torus?
+	assert(torus_3d->node_count == number_of_nodes);
+	assert(graph_calculate_edge_count(torus_3d) == d*number_of_nodes); 
 	
+	//Vollständiger Graph
 	n = 10;
 	Graph* complete_graph = graph_create_complete_graph(n);
 
@@ -500,7 +483,3 @@ int main(int argc, char** args)
 	printf("All tests passed!\n");
 	return 0;
 }
-
-
-
-
