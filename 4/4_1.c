@@ -25,8 +25,8 @@ int get_number_of_processes() {
 
 /**
  * @brief Runs the simulation on a single process. The balls are evenly
- * distributed among the processes and send the results to the master process
- * (rank 0)
+ * distributed among the processes. The results are sent to the master process
+ * (rank 0) with MPI_Send
  * @param state The state of the simulation (total number of balls, compartments
  * and rows of the galton board)
  */
@@ -51,8 +51,8 @@ void run_simulation_process(SimulationState state) {
 }
 
 /**
- * @brief Gathers the histograms sent by the other processes (ranks unequal 0),
- * adds the results up and displays them
+ * @brief Gathers the histograms sent by the other processes (ranks unequal 0)
+ * using MPI_Recv, adds the results up and displays them
  * @param state State of the simulation
  */
 void gather_simulation_results(SimulationState state) {
