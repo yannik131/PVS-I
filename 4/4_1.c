@@ -101,6 +101,7 @@ void MPI_simulation_state_define_layout(MPI_Datatype *MPI_state) {
 /**
  * @brief Lets the master process read in the simulation state from the user and
  * uses MPI_Bcast to broadcast it to the other processes
+ * @return The simulation state that was put in by the user
  */
 SimulationState read_and_broadcast_state() {
     SimulationState state;
