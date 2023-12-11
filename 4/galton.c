@@ -1,4 +1,4 @@
-// Implementation ist Copy & Paste aus Aufgabe 1.1 (minus der Kommentare)
+// Implementation was copy-pasted from exercise 1.1. Some comments were removed.
 
 #include "galton.h"
 
