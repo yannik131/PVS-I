@@ -79,6 +79,11 @@ void gather_simulation_results(SimulationState state) {
  * @brief To broadcast the SimulationState struct across the processes, its
  * layout has to be defined here so that MPI can understand the sent data
  * @param MPI_state The MPI_Datatype that needs its layout to be defined
+ * @note In this particular example, the SimulationState struct just contains 3
+ * byte sized fields (3 ints), so MPI_BYTE could also be used as the datatype
+ * for the broadcast without problems (with sizeof(SimulationState) for count).
+ * This would not work for non-byte-sized fields like char*, so I wanted to
+ * practice the general approach.
  */
 void MPI_simulation_state_define_layout(MPI_Datatype *MPI_state) {
     const int N = 3; // Number of struct members
@@ -110,14 +115,11 @@ SimulationState read_and_broadcast_state() {
     int rank = get_rank();
     if (rank == 0) {
         state = read_simulation_state();
-        MPI_simulation_state_define_layout(&MPI_state);
     }
 
-    MPI_Bcast(&state, sizeof(SimulationState), MPI_BYTE, 0, MPI_COMM_WORLD);
-
-    if (rank == 0) {
-        MPI_Type_free(&MPI_state);
-    }
+    MPI_simulation_state_define_layout(&MPI_state);
+    MPI_Bcast(&state, 1, MPI_state, 0, MPI_COMM_WORLD);
+    MPI_Type_free(&MPI_state);
 
     return state;
 }
