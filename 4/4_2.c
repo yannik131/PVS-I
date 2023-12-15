@@ -49,23 +49,13 @@ void synchronize_borders(double* T_k, int grid_size, int block_size, int r, int 
         index_right_receive = 0;
     }
     
-    for(int i = index_left_send; i < index_right_send; ++i) {
-        //printf("%i (before): T_k[%i] = %f\n", r, i, T_k[i]);
-    }
-    
-    //printf("%i -> %i: %f (left)\n", r, left_neighbor_rank, *(T_k + index_left_send));
     MPI_Send(T_k + index_left_send, 1, MPI_DOUBLE, left_neighbor_rank, 0, MPI_COMM_WORLD);
-    MPI_Recv(T_k + index_right_receive, 1, MPI_DOUBLE, left_neighbor_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-    //printf("%i: Received %f (left)\n", r, T_k[index_left_receive]);
+    //Element on the left from neighbor = Element on the right
+    MPI_Recv(T_k + index_right_receive, 1, MPI_DOUBLE, right_neighbor_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     
-    //printf("%i -> %i: %f (right)\n", r, right_neighbor_rank, *(T_k + index_right_send));
     MPI_Send(T_k + index_right_send, 1, MPI_DOUBLE, right_neighbor_rank, 0, MPI_COMM_WORLD);
-    MPI_Recv(T_k + index_left_receive, 1, MPI_DOUBLE, right_neighbor_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-    //printf("%i: Received %f (right)\n", r, T_k[index_right_receive]);
-    
-    for(int i = index_left_send; i < index_right_send; ++i) {
-        //printf("%i (after): T_k[%i] = %f\n", r, i, T_k[i]);
-    }
+    //Element on the right from neighbor = Element on the left
+    MPI_Recv(T_k + index_left_receive, 1, MPI_DOUBLE, left_neighbor_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 }
 
 /**
@@ -145,10 +135,8 @@ int main() {
     }
     
     for(int k = 0; k < num_time_steps; ++k) {
-        printf("Prozess %i (vorher):\n", r);
-        print_array(T_k, grid_size);
         synchronize_borders(T_k, grid_size, block_size, r, num_procs);
-        printf("Prozess %i (nachher):\n", r);
+        printf("Prozess %i:\n", r);
         print_array(T_k, grid_size);
         return 0;
         for(int i = block_begin; i < block_end; ++i) {
@@ -157,15 +145,12 @@ int main() {
             double dTdt_i = conductivity * (-2*T_k[i] + T_k[i_left] + T_k[i_right]);
             T_kn[i] = T_k[i] + delta_t * dTdt_i;
         }
-        for(int i = block_begin; i < block_end; ++i) {
-            //printf("%i. %i (during): T_k[%i] = %f\n", k, r, i, T_kn[i]);
-        }
         
         swap(&T_k, &T_kn);
     }
     
     for(int i = block_begin; i < block_end; ++i) {
-        //printf("%i (after): T_k[%i] = %f\n", r, i, T_k[i]);
+        printf("%i (after): T_k[%i] = %f\n", r, i, T_k[i]);
     }
     
     double T_average = 0;
