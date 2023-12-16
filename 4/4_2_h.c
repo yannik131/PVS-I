@@ -124,7 +124,7 @@ void gather_and_print_averages(double T_average, int r, int np) {
  * @brief swaps the content of two double arrays
  * @param a Pointer to the first address of the first array
  * @param b Pointer to the first address of the second array
- * @note The given implementation incorrect, it assigned local variables in the
+ * @note The given implementation was incorrect, it assigned local variables in the
  * function body
  */
 void swap(double **a, double **b) {
