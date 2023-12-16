@@ -73,6 +73,7 @@ void gather_simulation_results(SimulationState state) {
 
     display_histogram(histogram_sum, state);
     free(histogram);
+    free(histogram_sum);
 }
 
 /**
