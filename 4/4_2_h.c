@@ -157,7 +157,7 @@ int main() {
     int r = get_rank();
 
     int grid_size = 512 * 1024 * 1024;
-    int num_time_steps = 5;
+    int num_time_steps = 3000;
 
     assert(grid_size % num_procs == 0); // Abort if the grid can not evenly be
                                         // distributed among the processes
