@@ -61,11 +61,11 @@ int get_number_of_processes() {
  * @param block_size Size of T_k
  * @param r Rank of this process
  * @param np Number of processes
- * @param request A MPI_Request that will be updated once the border values have
- * been received
+ * @param request_left A MPI_Request that will be updated once the left border values have been synchronized
+ * @param request_right A MPI_Request that will be updated once the right border values have been synchronized
  */
 void synchronize_borders(double *T_k, int grid_size, int block_size, int r,
-                         int np, MPI_Request *request) {
+                         int np, MPI_Request *request_left, MPI_Request* request_right) {
     int left_neighbor_rank = (r - 1) % np;
     if (left_neighbor_rank < 0) {
         left_neighbor_rank += np;
@@ -85,13 +85,13 @@ void synchronize_borders(double *T_k, int grid_size, int block_size, int r,
              MPI_COMM_WORLD);
     // Element on the left from neighbor = Element on the right
     MPI_Irecv(T_k + index_right_receive, 1, MPI_DOUBLE, right_neighbor_rank, 0,
-              MPI_COMM_WORLD, request);
+              MPI_COMM_WORLD, request_right);
 
     MPI_Send(T_k + index_right_send, 1, MPI_DOUBLE, right_neighbor_rank, 0,
              MPI_COMM_WORLD);
     // Element on the right from neighbor = Element on the left
     MPI_Irecv(T_k + index_left_receive, 1, MPI_DOUBLE, left_neighbor_rank, 0,
-              MPI_COMM_WORLD, request);
+              MPI_COMM_WORLD, request_left);
 }
 
 /**
@@ -177,13 +177,14 @@ int main() {
     }
 
     for (int k = 0; k < num_time_steps; ++k) {
-        MPI_Request request;
-        synchronize_borders(T_k, grid_size, block_size, r, num_procs, &request);
+        MPI_Request request_left, request_right;
+        synchronize_borders(T_k, grid_size, block_size, r, num_procs, &request_left, &request_right);
         for (int i = block_begin + 1; i < block_end - 1; ++i) {
             calculate_value(T_k, T_kn, grid_size, i);
         }
 
-        MPI_Wait(&request, MPI_STATUS_IGNORE);
+        MPI_Wait(&request_left, MPI_STATUS_IGNORE);
+        MPI_Wait(&request_right, MPI_STATUS_IGNORE);
 
         calculate_value(T_k, T_kn, grid_size, block_begin);
         calculate_value(T_k, T_kn, grid_size, block_end - 1);
