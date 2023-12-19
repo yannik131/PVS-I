@@ -1,3 +1,5 @@
+// Compiled and executed with mpicc -o 4_1 4_1.c galton.c -Wall -O3 && mpirun
+// -np 8 4_1
 #include "galton.h"
 #include <mpi.h>
 #include <stdio.h>

@@ -1,3 +1,5 @@
+// Compiled and executed with mpicc -o 4_2_h -O3 4_2_h.c -Wall && mpirun -np 8
+// 4_2_h
 #include <assert.h>
 #include <mpi.h>
 #include <stdio.h>
@@ -124,8 +126,8 @@ void gather_and_print_averages(double T_average, int r, int np) {
  * @brief swaps the content of two double arrays
  * @param a Pointer to the first address of the first array
  * @param b Pointer to the first address of the second array
- * @note The given implementation was incorrect, it assigned local variables in the
- * function body
+ * @note The given implementation was incorrect, it assigned local variables in
+ * the function body
  */
 void swap(double **a, double **b) {
     double *temp = *a;
