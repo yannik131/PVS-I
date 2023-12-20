@@ -53,6 +53,13 @@ int get_number_of_processes() {
     return np;
 }
 
+typedef struct Requests {
+    MPI_Request receive_left;
+    MPI_Request receive_right;
+    MPI_Request send_left;
+    MPI_Request send_right;
+} Requests;
+
 /**
  * @brief Sends and receives the temperatures on the left and right end of a
  * block to the neighboring left and right processes to synchronize the
@@ -61,11 +68,10 @@ int get_number_of_processes() {
  * @param block_size Size of T_k
  * @param r Rank of this process
  * @param np Number of processes
- * @param request_left A MPI_Request that will be updated once the left border values have been synchronized
- * @param request_right A MPI_Request that will be updated once the right border values have been synchronized
+ * @param requests Instance of Requests with the MPI_Requests needed for synchronization
  */
 void synchronize_borders(double *T_k, int grid_size, int block_size, int r,
-                         int np, MPI_Request *request_left, MPI_Request* request_right) {
+                         int np, Requests *requests) {
     int left_neighbor_rank = (r - 1) % np;
     if (left_neighbor_rank < 0) {
         left_neighbor_rank += np;
@@ -81,17 +87,17 @@ void synchronize_borders(double *T_k, int grid_size, int block_size, int r,
     }
     int index_right_receive = (index_right_send + 1) % grid_size;
 
-    MPI_Send(T_k + index_left_send, 1, MPI_DOUBLE, left_neighbor_rank, 0,
-             MPI_COMM_WORLD);
+    MPI_Isend(T_k + index_left_send, 1, MPI_DOUBLE, left_neighbor_rank, 0,
+              MPI_COMM_WORLD, &(requests->send_left));
     // Element on the left from neighbor = Element on the right
     MPI_Irecv(T_k + index_right_receive, 1, MPI_DOUBLE, right_neighbor_rank, 0,
-              MPI_COMM_WORLD, request_right);
+              MPI_COMM_WORLD, &(requests->receive_right));
 
-    MPI_Send(T_k + index_right_send, 1, MPI_DOUBLE, right_neighbor_rank, 0,
-             MPI_COMM_WORLD);
+    MPI_Isend(T_k + index_right_send, 1, MPI_DOUBLE, right_neighbor_rank, 0,
+              MPI_COMM_WORLD, &(requests->send_right));
     // Element on the right from neighbor = Element on the left
     MPI_Irecv(T_k + index_left_receive, 1, MPI_DOUBLE, left_neighbor_rank, 0,
-              MPI_COMM_WORLD, request_left);
+              MPI_COMM_WORLD, &(requests->receive_left));
 }
 
 /**
@@ -177,17 +183,20 @@ int main() {
     }
 
     for (int k = 0; k < num_time_steps; ++k) {
-        MPI_Request request_left, request_right;
-        synchronize_borders(T_k, grid_size, block_size, r, num_procs, &request_left, &request_right);
+        Requests requests;
+        synchronize_borders(T_k, grid_size, block_size, r, num_procs,
+                            &requests);
         for (int i = block_begin + 1; i < block_end - 1; ++i) {
             calculate_value(T_k, T_kn, grid_size, i);
         }
-
-        MPI_Wait(&request_left, MPI_STATUS_IGNORE);
-        MPI_Wait(&request_right, MPI_STATUS_IGNORE);
-
+        MPI_Wait(&requests.receive_left, MPI_STATUS_IGNORE);
         calculate_value(T_k, T_kn, grid_size, block_begin);
+
+        MPI_Wait(&requests.receive_right, MPI_STATUS_IGNORE);
         calculate_value(T_k, T_kn, grid_size, block_end - 1);
+        
+        MPI_Wait(&requests.send_left, MPI_STATUS_IGNORE);
+        MPI_Wait(&requests.send_right, MPI_STATUS_IGNORE);
 
         swap(&T_k, &T_kn);
     }
