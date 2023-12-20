@@ -53,6 +53,11 @@ int get_number_of_processes() {
     return np;
 }
 
+/**
+ * @brief To synchronize the borders, 4 MPI_Request objects are needed for
+ * sending/receiving the two borders. To keep things short, all values are put
+ * into 1 struct
+ */
 typedef struct Requests {
     MPI_Request receive_left;
     MPI_Request receive_right;
@@ -68,7 +73,8 @@ typedef struct Requests {
  * @param block_size Size of T_k
  * @param r Rank of this process
  * @param np Number of processes
- * @param requests Instance of Requests with the MPI_Requests needed for synchronization
+ * @param requests Instance of Requests with the MPI_Requests needed for
+ * synchronization
  */
 void synchronize_borders(double *T_k, int grid_size, int block_size, int r,
                          int np, Requests *requests) {
@@ -101,30 +107,29 @@ void synchronize_borders(double *T_k, int grid_size, int block_size, int r,
 }
 
 /**
- * @brief Lets all processes send the average temperature to the master process.
- * The master process then averages the sum and prints it
- * @param T_average The calculated average temperature for this process
- * @param r The rank of this process
- * @param np Number of processes
+ * @brief Lets all processes send their average temperature to the master
+ * process. The master process then averages the sum and prints it
+ * @param T_k The calculated temperatures of the current process
+ * @param r Rank
+ * @param num_procs Number of processes
+ * @param block_size Number of cells each process has to calculate
  */
-void gather_and_print_averages(double T_average, int r, int np) {
-    if (r != 0) {
-        // T_average for r == 0 doesn't need to be sent, it's already passed as
-        // an argument
-        MPI_Send(&T_average, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+void gather_and_print_averages(double *T_k, int r, int num_procs,
+                               int block_size) {
+    double T_average = 0;
+    for (int i = r * block_size; i < (r + 1) * block_size; ++i) {
+        T_average += T_k[i];
     }
+    T_average = T_average / block_size;
+    double total_average = 0;
+    printf("%i sending average: %f\n", r, T_average);
+
+    MPI_Reduce(&T_average, &total_average, 1, MPI_DOUBLE, MPI_SUM, 0,
+               MPI_COMM_WORLD);
 
     if (r == 0) {
-        double T_received;
-        printf("Master avg: %f\n", T_average);
-        for (int i = 1; i < np; ++i) {
-            MPI_Recv(&T_received, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD,
-                     MPI_STATUS_IGNORE);
-            printf("Received avg: %f\n", T_received);
-            T_average += T_received;
-        }
-        T_average = T_average / np;
-        printf("T_average: %f", T_average);
+        total_average = total_average / num_procs;
+        printf("Total average: %f\n", total_average);
     }
 }
 
@@ -164,8 +169,8 @@ int main() {
     int num_procs = get_number_of_processes();
     int r = get_rank();
 
-    int grid_size = 512 * 1024 * 1024;
-    int num_time_steps = 3000;
+    int grid_size = 6;
+    int num_time_steps = 2;
 
     assert(grid_size % num_procs == 0); // Abort if the grid can not evenly be
                                         // distributed among the processes
@@ -194,20 +199,14 @@ int main() {
 
         MPI_Wait(&requests.receive_right, MPI_STATUS_IGNORE);
         calculate_value(T_k, T_kn, grid_size, block_end - 1);
-        
+
         MPI_Wait(&requests.send_left, MPI_STATUS_IGNORE);
         MPI_Wait(&requests.send_right, MPI_STATUS_IGNORE);
 
         swap(&T_k, &T_kn);
     }
 
-    double T_average = 0;
-    for (int i = block_begin; i < block_end; ++i) {
-        T_average += T_k[i];
-    }
-    T_average = T_average / block_size;
-
-    gather_and_print_averages(T_average, r, num_procs);
+    gather_and_print_averages(T_k, r, num_procs, block_size);
 
     MPI_Finalize();
 }
