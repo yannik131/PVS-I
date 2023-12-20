@@ -169,8 +169,8 @@ int main() {
     int num_procs = get_number_of_processes();
     int r = get_rank();
 
-    int grid_size = 6;
-    int num_time_steps = 2;
+    int grid_size = 512 * 1024 * 1024;
+    int num_time_steps = 3000;
 
     assert(grid_size % num_procs == 0); // Abort if the grid can not evenly be
                                         // distributed among the processes
