@@ -8,7 +8,6 @@ void swap(double** a, double** b)
 	*a = temp;
 }
 
-
 int main(int argc, char** args)
 {
     double delta_t = 0.02;
