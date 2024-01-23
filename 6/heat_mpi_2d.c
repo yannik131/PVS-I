@@ -10,13 +10,14 @@
  * intersection: Schnittmenge    -> {c, d, f, g, h}
  * difference(g2, g1): g2-g1     -> {a, l}
  * difference(g1, g2): g1-g2     -> {b, e, j}
-*/
+ */
 
 /**
  * Aufgabe 6.1
  * Notes:
- * - It would have been more memory efficient if every process only copied the relevant section instead of the whole grid
-*/
+ * - It would have been more memory efficient if every process only copied the relevant section instead of the whole
+ * grid
+ */
 
 typedef struct Process {
     int rank;           // Rank of this process
@@ -31,34 +32,36 @@ typedef struct Process {
 } Process;
 
 /**
- * @brief Takes the dimension of the N x N 2d heat grid and creates a process grid with MPI_Cart_create to evenly distribute the processes among the grid. Each process handles a grid of process.borderLength x process.borderLength
-*/
+ * @brief Takes the dimension of the N x N 2d heat grid and creates a process grid with MPI_Cart_create to evenly
+ * distribute the processes among the grid. Each process handles a grid of process.borderLength x process.borderLength
+ */
 Process createProcessGrid(int N) {
     Process process;
     MPI_Comm_rank(MPI_COMM_WORLD, &process.rank);
     MPI_Comm_size(MPI_COMM_WORLD, &process.worldSize);
 
     process.worldGridSize = sqrt(process.worldSize);
-    assert(process.worldGridSize * process.worldGridSize == process.worldSize); //The number of processes must be a square number
-    
+    assert(process.worldGridSize * process.worldGridSize ==
+           process.worldSize); // The number of processes must be a square number
+
     int dimensions[2] = {process.worldGridSize, process.worldGridSize};
     int periods[2] = {1, 1};
-    
+
     process.N = N;
     process.totalGridSize = N * N;
     assert(process.totalGridSize % process.worldSize == 0); // Make sure the grid can be distributed
     int borderLength = N / process.worldGridSize;
     process.borderLength = borderLength;
-    
+
     MPI_Cart_create(MPI_COMM_WORLD, process.worldGridSize, dimensions, periods, 0, &process.gridComm);
     MPI_Cart_coords(process.gridComm, process.rank, process.worldGridSize, process.coordinates);
-    
+
     return process;
 }
 
 /**
- * @brief Connects out of bound indexes with neighbors in a cyclic fashion. 
-*/
+ * @brief Connects out of bound indexes with neighbors in a cyclic fashion.
+ */
 void sanatizeNeighborCoordinates(int *coordinates[4], int n) {
     for (int i = 0; i < 4; ++i) {
         for (int j = 0; j < 2; ++j) {
@@ -72,9 +75,10 @@ void sanatizeNeighborCoordinates(int *coordinates[4], int n) {
 }
 
 /**
- * @brief To send the left and right border elements of the grid, the indexes of those elements are gathered first. With the indexes, the corresponding elements can be put in one single array and be sent/received.
+ * @brief To send the left and right border elements of the grid, the indexes of those elements are gathered first. With
+ * the indexes, the corresponding elements can be put in one single array and be sent/received.
  * @note Doing this more than once is stupid.
-*/
+ */
 int *getLeftRightBorderIndexes(int N, int *coordinates, int borderLength, int right) {
     int *indexes = (int *)malloc(borderLength * sizeof(int));
     int index = (N * coordinates[1] + coordinates[0]) * borderLength;
@@ -94,7 +98,7 @@ int *getLeftRightBorderIndexes(int N, int *coordinates, int borderLength, int ri
 /**
  * @brief To send the top and bottom border, the elements can be sent directly if the correct offset is obtained.
  * @note Again, stupid. Should be cached somehow.
-*/
+ */
 int getTopBottomBorderOffset(int N, int *coordinates, int borderLength, int top) {
     //(coordinates[0], coordinates[1]) * borderLength = (x, y)
     // offset = N*y + x
@@ -107,13 +111,15 @@ int getTopBottomBorderOffset(int N, int *coordinates, int borderLength, int top)
 }
 
 /**
- * @brief Sends count elements from source to targetRank and receives count elements from sourceRank and writes them to destination
+ * @brief Sends count elements from source to targetRank and receives count elements from sourceRank and writes them to
+destination
  * @note Creating all requests in synchronize_borders and waiting on them causes not all borders to sync and the program
 // to crash. Maybe because of simultaneous access to the array?
 */
 void sendReceive(int count, MPI_Comm comm, double *source, int targetRank, double *destination, int sourceRank) {
     MPI_Request request;
-    MPI_Isendrecv(source, count, MPI_DOUBLE, targetRank, 0, destination, count, MPI_DOUBLE, sourceRank, 0, comm, &request);
+    MPI_Isendrecv(source, count, MPI_DOUBLE, targetRank, 0, destination, count, MPI_DOUBLE, sourceRank, 0, comm,
+                  &request);
     MPI_Wait(&request, MPI_STATUS_IGNORE);
 }
 
@@ -123,13 +129,14 @@ void sendReceive(int count, MPI_Comm comm, double *source, int targetRank, doubl
 void sendReceiveWithOffset(Process process, int sourceOffset, int targetRank, int destinationOffset, int sourceRank) {
     double *source = process.grid + sourceOffset;
     double *destination = process.grid + destinationOffset;
-    
+
     sendReceive(process.borderLength, process.gridComm, source, targetRank, destination, sourceRank);
 }
 
 /**
- * @brief Wrapper for sendReceive for sending/receiving left/right border. This case requires the appropriate indexes to be determined, so that the values can be sent/received in one go
-*/
+ * @brief Wrapper for sendReceive for sending/receiving left/right border. This case requires the appropriate indexes to
+ * be determined, so that the values can be sent/received in one go
+ */
 void sendReceiveWithIndexes(Process process, int *sourceIndexes, int targetRank, int *destinationIndexes,
                             int sourceRank) {
     double *source = (double *)malloc(process.borderLength * sizeof(double));
@@ -149,8 +156,9 @@ void sendReceiveWithIndexes(Process process, int *sourceIndexes, int targetRank,
 }
 
 /**
- * @brief Sends every border (top, right, bottom, left) to the appropriate neighbor process and receives the sent border.
-*/
+ * @brief Sends every border (top, right, bottom, left) to the appropriate neighbor process and receives the sent
+ * border.
+ */
 void synchronize_borders(Process process) {
     int topNeighbor[2] = {process.coordinates[0], process.coordinates[1] - 1};
     int rightNeighbor[2] = {process.coordinates[0] + 1, process.coordinates[1]};
@@ -164,7 +172,7 @@ void synchronize_borders(Process process) {
     int bottomNeighborRank;
     int leftNeighborRank;
     int rightNeighborRank;
-    
+
     MPI_Cart_rank(process.gridComm, topNeighbor, &topNeighborRank);
     MPI_Cart_rank(process.gridComm, bottomNeighbor, &bottomNeighborRank);
     MPI_Cart_rank(process.gridComm, leftNeighbor, &leftNeighborRank);
@@ -214,19 +222,19 @@ int main(int argc, char **args) {
     int grid_size_x = 1024;
     int grid_size_y = 1024;
     assert(grid_size_x == grid_size_y);
-    
-    int num_time_steps = 300;
+
+    int num_time_steps = 3000;
     double conductivity = 0.1;
 
-    double *T_k  = (double *)malloc(sizeof(double) * grid_size_x * grid_size_y);
+    double *T_k = (double *)malloc(sizeof(double) * grid_size_x * grid_size_y);
     double *T_kn = (double *)malloc(sizeof(double) * grid_size_x * grid_size_y);
-    
+
     Process process = createProcessGrid(grid_size_x);
     process.grid = T_k;
-    
+
     int xOffset = process.coordinates[0] * process.borderLength;
     int yOffset = process.coordinates[1] * process.borderLength;
-    
+
     for (int y = yOffset; y < yOffset + process.borderLength; y++) {
         for (int x = xOffset; x < xOffset + process.borderLength; x++) {
             T_k[grid_size_x * y + x] = x + y;
@@ -261,8 +269,9 @@ int main(int argc, char **args) {
     double T_global_sum;
     MPI_Reduce(&T_sum, &T_global_sum, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
-    if(process.rank == 0) {
+    if (process.rank == 0) {
         double T_average = T_global_sum / (grid_size_x * grid_size_x);
+        //The average is decreasing slightly with every time step, probably due to a off-by-one error somewhere
         printf("Average: %f\n", T_average);
     }
 
