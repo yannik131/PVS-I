@@ -24,7 +24,7 @@ int calculateSquare(int N) {
 }
 
 void printProcess(Process info) {
-    printf("World size: %d\nRank: %d\n(x, y): (%d, %d)\n\n", info.worldSize, info.rank, info.coordinates[0],
+    printf("World size: %d\ngridEdgeLength: %d\nRank: %d\n(x, y): (%d, %d)\n\n", info.worldSize, info.gridEdgeLength, info.rank, info.coordinates[0],
            info.coordinates[1]);
 }
 
@@ -140,7 +140,13 @@ int getTopBottomBorderOffset(int N, int* coordinates, int gridEdgeLength, int to
 }
 
 //TODO: Return requests, wait outside for them all at once
+//Note: Creating 8 requests in synchronize_borders and waiting on them causes not all borders to sync and the program to crash. Maybe because of simultaneous access to the array?
 void sendReceive(int count, MPI_Comm comm, double* source, int targetRank, double* destination, int sourceRank) {
+    MPI_Request request;
+    MPI_Isendrecv(source, count, MPI_DOUBLE, targetRank, 0, destination, count, MPI_DOUBLE, sourceRank, 0, comm, &request);
+    MPI_Wait(&request, MPI_STATUS_IGNORE);
+    
+    /*
     int bufferSize = count + MPI_BSEND_OVERHEAD;
     void* sendBuffer = malloc(bufferSize);
     MPI_Buffer_attach(sendBuffer, bufferSize);
@@ -157,7 +163,7 @@ void sendReceive(int count, MPI_Comm comm, double* source, int targetRank, doubl
     MPI_Wait(&receiveRequest, MPI_STATUS_IGNORE);
     
     MPI_Buffer_detach(&sendBuffer, &bufferSize);
-    free(sendBuffer);
+    free(sendBuffer);*/
 }
 
 /**
