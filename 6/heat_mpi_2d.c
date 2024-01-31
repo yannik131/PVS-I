@@ -15,8 +15,20 @@
 /**
  * Aufgabe 6.1
  * Notes:
- * - It would have been more memory efficient if every process only copied the relevant section instead of the whole
- * grid
+ * - My solution copies the whole grid to every process and lets the processes work only on the relevant
+ * subsection of the grid. It would have been more memory efficient if every process only copied the relevant
+ * section instead of the whole grid
+ * Zusatzfrage:
+ * - In this exercise, every process has to synchronize its top, right, bottom and left border which contain m
+ * / n values each. In total, 4 * m / n * n = 4 * m values have to be transmitted if each process handles a m
+ * * m square. If we don't assign squares to each process, each process still handles m * m / n elements.
+ * These elements form blocks which have a small height of (m * m / n) / m = m / n, if we assume m >= n. Since
+ * height * width = m * m / n, we get m / n * width = m * m / n <-> width = m. n*(2*width + 2*height) = n * 2
+ * * m + 2 * m = 2 * m * (n + 1) elements have to be transmitted, which is more compared to the 4 * m elements
+ * for 2D-squares with square numbers > 1. For m < n, this is probably true as well, since squares minimize
+ * the maximum edge length among rectangles. In case the number of processes is not a square number and
+ * squares are therefore impossible to form, rectangles being as close as possible to squares would probably
+ * be the best method.
  */
 
 typedef struct Process {
@@ -28,12 +40,14 @@ typedef struct Process {
     double *grid;       // The simulation values for this process, unneeded entries are not used
     int N;              // The edge length of the simulation grid
     int totalGridSize;  // N * N
-    int borderLength;   // N / worldGridSize, number of entries on the border of each process in the simulation grid
+    int borderLength; // N / worldGridSize, number of entries on the border of each process in the simulation
+                      // grid
 } Process;
 
 /**
- * @brief Takes the dimension of the N x N 2d heat grid and creates a process grid with MPI_Cart_create to evenly
- * distribute the processes among the grid. Each process handles a grid of process.borderLength x process.borderLength
+ * @brief Takes the dimension of the N x N 2d heat grid and creates a process grid with MPI_Cart_create to
+ * evenly distribute the processes among the grid. Each process handles a grid of process.borderLength x
+ * process.borderLength
  */
 Process createProcessGrid(int N) {
     Process process;
@@ -60,23 +74,8 @@ Process createProcessGrid(int N) {
 }
 
 /**
- * @brief Connects out of bound indexes with neighbors in a cyclic fashion.
- */
-void sanatizeNeighborCoordinates(int *coordinates[4], int n) {
-    for (int i = 0; i < 4; ++i) {
-        for (int j = 0; j < 2; ++j) {
-            if (coordinates[i][j] < 0) {
-                coordinates[i][j] = n - 1;
-            } else if (coordinates[i][j] == n) {
-                coordinates[i][j] = 0;
-            }
-        }
-    }
-}
-
-/**
- * @brief To send the left and right border elements of the grid, the indexes of those elements are gathered first. With
- * the indexes, the corresponding elements can be put in one single array and be sent/received.
+ * @brief To send the left and right border elements of the grid, the indexes of those elements are gathered
+ * first. With the indexes, the corresponding elements can be put in one single array and be sent/received.
  * @note Doing this more than once is stupid.
  */
 int *getLeftRightBorderIndexes(int N, int *coordinates, int borderLength, int right) {
@@ -91,13 +90,12 @@ int *getLeftRightBorderIndexes(int N, int *coordinates, int borderLength, int ri
         indexes[i] = index;
         index += N;
     }
-
     return indexes;
 }
 
 /**
- * @brief To send the top and bottom border, the elements can be sent directly if the correct offset is obtained.
- * @note Again, stupid. Should be cached somehow.
+ * @brief To send the top and bottom border, the elements can be sent directly if the correct offset is
+ * obtained.
  */
 int getTopBottomBorderOffset(int N, int *coordinates, int borderLength, int top) {
     //(coordinates[0], coordinates[1]) * borderLength = (x, y)
@@ -111,22 +109,25 @@ int getTopBottomBorderOffset(int N, int *coordinates, int borderLength, int top)
 }
 
 /**
- * @brief Sends count elements from source to targetRank and receives count elements from sourceRank and writes them to
-destination
- * @note Creating all requests in synchronize_borders and waiting on them causes not all borders to sync and the program
+ * @brief Sends count elements from source to targetRank and receives count elements from sourceRank and
+writes them to destination
+ * @note Creating all requests in synchronize_borders and waiting on them causes not all borders to sync and
+the program
 // to crash. Maybe because of simultaneous access to the array?
 */
-void sendReceive(int count, MPI_Comm comm, double *source, int targetRank, double *destination, int sourceRank) {
+void sendReceive(int count, MPI_Comm comm, double *source, int targetRank, double *destination,
+                 int sourceRank) {
     MPI_Request request;
-    MPI_Isendrecv(source, count, MPI_DOUBLE, targetRank, 0, destination, count, MPI_DOUBLE, sourceRank, 0, comm,
-                  &request);
+    MPI_Isendrecv(source, count, MPI_DOUBLE, targetRank, 0, destination, count, MPI_DOUBLE, sourceRank, 0,
+                  comm, &request);
     MPI_Wait(&request, MPI_STATUS_IGNORE);
 }
 
 /**
  * @brief Wrapper for sendReceive for sending/receiving top/bottom border
  */
-void sendReceiveWithOffset(Process process, int sourceOffset, int targetRank, int destinationOffset, int sourceRank) {
+void sendReceiveWithOffset(Process process, int sourceOffset, int targetRank, int destinationOffset,
+                           int sourceRank) {
     double *source = process.grid + sourceOffset;
     double *destination = process.grid + destinationOffset;
 
@@ -134,8 +135,8 @@ void sendReceiveWithOffset(Process process, int sourceOffset, int targetRank, in
 }
 
 /**
- * @brief Wrapper for sendReceive for sending/receiving left/right border. This case requires the appropriate indexes to
- * be determined, so that the values can be sent/received in one go
+ * @brief Wrapper for sendReceive for sending/receiving left/right border. This case requires the appropriate
+ * indexes to be determined, so that the values can be sent/received in one go
  */
 void sendReceiveWithIndexes(Process process, int *sourceIndexes, int targetRank, int *destinationIndexes,
                             int sourceRank) {
@@ -156,8 +157,9 @@ void sendReceiveWithIndexes(Process process, int *sourceIndexes, int targetRank,
 }
 
 /**
- * @brief Sends every border (top, right, bottom, left) to the appropriate neighbor process and receives the sent
- * border.
+ * @brief Sends every border (top, right, bottom, left) to the appropriate neighbor process and receives the
+ * sent border. The borders are synced with all processes in this order, i. e. all processes will first send
+ * and then receive the top border with MPI_ISendrecv, then the right one and so on.
  */
 void synchronize_borders(Process process) {
     int topNeighbor[2] = {process.coordinates[0], process.coordinates[1] - 1};
@@ -165,19 +167,19 @@ void synchronize_borders(Process process) {
     int bottomNeighbor[2] = {process.coordinates[0], process.coordinates[1] + 1};
     int leftNeighbor[2] = {process.coordinates[0] - 1, process.coordinates[1]};
 
-    int *neighbors[4] = {topNeighbor, rightNeighbor, bottomNeighbor, leftNeighbor};
-    sanatizeNeighborCoordinates(neighbors, process.worldGridSize);
-
     int topNeighborRank;
     int bottomNeighborRank;
     int leftNeighborRank;
     int rightNeighborRank;
 
-    MPI_Cart_rank(process.gridComm, topNeighbor, &topNeighborRank);
-    MPI_Cart_rank(process.gridComm, bottomNeighbor, &bottomNeighborRank);
-    MPI_Cart_rank(process.gridComm, leftNeighbor, &leftNeighborRank);
-    MPI_Cart_rank(process.gridComm, rightNeighbor, &rightNeighborRank);
+    MPI_Cart_shift(process.gridComm, 0, 1, &leftNeighborRank, &rightNeighborRank);
+    MPI_Cart_shift(process.gridComm, 1, 1, &topNeighborRank, &bottomNeighborRank);
 
+    MPI_Cart_coords(process.gridComm, topNeighborRank, process.worldGridSize, topNeighbor);
+    MPI_Cart_coords(process.gridComm, rightNeighborRank, process.worldGridSize, rightNeighbor);
+    MPI_Cart_coords(process.gridComm, bottomNeighborRank, process.worldGridSize, bottomNeighbor);
+    MPI_Cart_coords(process.gridComm, leftNeighborRank, process.worldGridSize, leftNeighbor);
+    
     // Send top, receive bottom
     int sourceOffset = getTopBottomBorderOffset(process.N, process.coordinates, process.borderLength, 1);
     int destinationOffset = getTopBottomBorderOffset(process.N, bottomNeighbor, process.borderLength, 1);
@@ -252,7 +254,8 @@ int main(int argc, char **args) {
                 int i_down = y != 0 ? i - grid_size_x : i + grid_size_x;
                 int i_up = y != grid_size_y - 1 ? i + grid_size_x : i - grid_size_x;
 
-                double dTdt_i = conductivity * (-4 * T_k[i] + T_k[i_left] + T_k[i_right] + T_k[i_down] + T_k[i_up]);
+                double dTdt_i =
+                    conductivity * (-4 * T_k[i] + T_k[i_left] + T_k[i_right] + T_k[i_down] + T_k[i_up]);
                 T_kn[i] = T_k[i] + delta_t * dTdt_i;
             }
         }
@@ -271,7 +274,8 @@ int main(int argc, char **args) {
 
     if (process.rank == 0) {
         double T_average = T_global_sum / (grid_size_x * grid_size_x);
-        //The average is decreasing slightly with every time step, probably due to a off-by-one error somewhere
+        // The average is decreasing slightly with every time step, probably due to a off-by-one error
+        // somewhere
         printf("Average: %f\n", T_average);
     }
 
