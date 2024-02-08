@@ -546,6 +546,12 @@ void cart() {
     int newRank;
     MPI_Cart_rank(gridComm, coords, &newRank);
     
+    int dims[2];
+    int a[2];
+    int b[2];
+    MPI_Cart_get(gridComm, 2, dims, a, b);
+    printf("Received dims: %i, %i\n", dims[0], dims[1]);
+    
     for(int i = 0; i < getWorldSize(); ++i) {
         if(getRank() == i) {
             int left;
@@ -558,6 +564,26 @@ void cart() {
         }
         MPI_Barrier(MPI_COMM_WORLD);
     }
+}
+
+int send_to_right(int* send, int send_cnt, int* recv, int N)
+{
+    int rank, p, succ, pred, recv_cnt;
+    MPI_Status status;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &p);
+    pred = (rank - 1 + p) % p;
+    succ = (rank + 1) % p;
+    if(rank % 2 == 0) {
+        MPI_Send(send, send_cnt, MPI_INT, succ, 0, MPI_COMM_WORLD);
+        MPI_Recv(recv, N, MPI_INT, pred, 0, MPI_COMM_WORLD, &status);
+    }
+    else {
+        MPI_Recv(recv, N, MPI_INT, pred, 0, MPI_COMM_WORLD, &status);
+        MPI_Send(send, send_cnt, MPI_INT, succ, 0, MPI_COMM_WORLD);
+    }
+    MPI_Get_count(&status, MPI_INT, &recv_cnt);
+    return recv_cnt;
 }
 
 int main() {
@@ -582,6 +608,11 @@ int main() {
         alltoall();
         alltoallv();
         barrier();
+    }
+    else if(getWorldSize() == 3) {
+        int send[3] = {0, 0, 0};
+        int recv[3];
+        printf("%i\n", send_to_right(send, 3, recv, 3));
     }
     else if(getWorldSize() == 4) {
         split();
