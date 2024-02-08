@@ -4,23 +4,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
-
-void flushAndSleep() {
-    fflush(stdout);
-    struct timespec ts;
-    ts.tv_sec = 0;
-    ts.tv_nsec = 1000000;
-    
-    nanosleep(&ts, NULL);
-}
-
-int getWorldSize() {
-    int worldSize;
-    MPI_Comm_size(MPI_COMM_WORLD, &worldSize);
-    
-    return worldSize;
-}
 
 /**
  * @brief Method: 
