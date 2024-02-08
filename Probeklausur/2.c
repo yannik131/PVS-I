@@ -115,10 +115,10 @@ int main() {
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    int data[1] = {rank};
-    int receive[1];
+    double send = (double)rank;
+    double receive;
     
-    reduce_grid(data, receive, 1, gridComm);
+    reduce_grid(&send, &receive, 1, gridComm);
     
     MPI_Finalize();
 }
