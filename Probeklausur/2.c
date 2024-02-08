@@ -37,7 +37,6 @@ void reduce_grid(void* sendbuf, void* recvbuf, int count, MPI_Comm comm) {
             ((double*)tmpBufReduce)[i] += ((double*)tmpBufRecv)[i]; \
         }
     
-    
     if(left == MPI_PROC_NULL) {
         send(right);
     }
