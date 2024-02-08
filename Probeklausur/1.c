@@ -1,6 +1,8 @@
 #include <assert.h>
 #include <mpi.h>
 
+// Da jeder Prozess zuerst wartet, führt jede denkbare Ausführung zu einem Circular-Wait-Deadlock
+
 int send_to_right1(int *send, int send_cnt, int *recv, int N)
 {
     int rank, p, succ, pred, recv_cnt;
