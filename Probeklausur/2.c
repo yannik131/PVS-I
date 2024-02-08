@@ -43,8 +43,6 @@ void reduce_grid(void* sendbuf, void* recvbuf, int count, MPI_Comm comm) {
     MPI_Cart_shift(comm, 0, 1, &left, &right);
     MPI_Cart_shift(comm, 1, 1, &top, &bottom);
     
-    #define msg(text) printf("(%i, %i): %s\n", coords[0], coords[1], text); flushAndSleep();
-    
     int rootCoords[2] = {dims[0] / 2, dims[1] / 2};
     int inRootColumn = coords[0] == rootCoords[0];
     int isRoot = inRootColumn && coords[1] == rootCoords[1];
@@ -58,46 +56,37 @@ void reduce_grid(void* sendbuf, void* recvbuf, int count, MPI_Comm comm) {
     
     
     if(left == MPI_PROC_NULL) {
-        msg("Sending right");
         send(right);
     }
     else if(right == MPI_PROC_NULL) {
-        msg("Sending left");
         send(left);
     }
     else if(!inRootColumn) {
         if(coords[0] > rootCoords[0]) {
             recv(right);
             send(left);
-            msg("Received right, sending left");
         }
         else {
             recv(left);
             send(right);
-            msg("Received left, sending right");
         }
     }
     else if(!isRoot) {
         recv(left);
         recv(right);
-        msg("Received left and right");
         if(top == MPI_PROC_NULL) {
-            msg("Sending bottom");
             send(bottom);
         }
         else if(bottom == MPI_PROC_NULL) {
-            msg("Sending top");
             send(top);
         }
         else if(coords[1] < rootCoords[1]) {
             recv(top);
             send(bottom);
-            msg("Received top, sending bottom");
         }
         else {
             recv(bottom);
             send(top);
-            msg("Received bottom, sending top");
         }
     }
     else {
@@ -105,7 +94,6 @@ void reduce_grid(void* sendbuf, void* recvbuf, int count, MPI_Comm comm) {
         recv(right);
         recv(bottom);
         recv(left);
-        msg("Received all sides! Yay!");
         memcpy(recvbuf, tmpBufReduce, count * sizeof(double));
     }
     
