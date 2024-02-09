@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <mpi.h>
+#include <limits.h>
 
 // Da jeder Prozess zuerst wartet, führt jede denkbare Ausführung zu einem Circular-Wait-Deadlock
 
