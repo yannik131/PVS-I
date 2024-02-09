@@ -46,7 +46,7 @@ int main(int argc, char **args)
     //If sim_size / worldSize = nInaccurate R remaining, the first
     //remaining processes get 1 extra value to work with
     int nInaccurate = sim_size / worldSize;
-    int remaining = sim_size - nInaccurate * nInaccurate;
+    int remaining = sim_size - nInaccurate * worldSize;
     
     int* displs = (int*)malloc(worldSize * sizeof(int));
     int* revcounts = (int*)malloc(worldSize * sizeof(int));
@@ -88,5 +88,8 @@ int main(int argc, char **args)
     printf("S_max: %f\n", S_max);
     free(S_k);
     free(S_kn);
+    
+    MPI_Finalize();
+    
     return 0;
 }
